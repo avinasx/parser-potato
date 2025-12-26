@@ -20,6 +20,8 @@ class DataLoaderService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.errors: List[str] = []
+        self.skipped_rows: int = 0  # Track number of rows skipped due to errors
+        self.success_rows: int = 0  # Track number of rows successfully processed
     
     @staticmethod
     def identify_table_type(record: Dict[str, Any]) -> Optional[str]:
@@ -128,35 +130,42 @@ class DataLoaderService:
                 
                 if not table_type:
                     self.errors.append(f"Row {idx + 1}: Could not identify table type from fields")
+                    self.skipped_rows += 1
                     continue
                 
                 if table_type == 'customer':
                     data = self.prepare_customer_data(record)
                     validated = CustomerSchema(**data)
                     categorized['customers'].append(validated.model_dump())
+                    self.success_rows += 1
                 
                 elif table_type == 'product':
                     data = self.prepare_product_data(record)
                     validated = ProductSchema(**data)
                     categorized['products'].append(validated.model_dump())
+                    self.success_rows += 1
                 
                 elif table_type == 'order':
                     data = self.prepare_order_data(record)
                     validated = OrderSchema(**data)
                     categorized['orders'].append(validated.model_dump())
+                    self.success_rows += 1
                 
                 elif table_type == 'order_item':
                     data = self.prepare_order_item_data(record)
                     validated = OrderItemSchema(**data)
                     categorized['order_items'].append(validated.model_dump())
+                    self.success_rows += 1
             
             except ValidationError as e:
                 error_msg = f"Row {idx + 1}: Validation error - {str(e)}"
                 self.errors.append(error_msg)
+                self.skipped_rows += 1
                 logger.warning(error_msg)
             except Exception as e:
                 error_msg = f"Row {idx + 1}: Error - {str(e)}"
                 self.errors.append(error_msg)
+                self.skipped_rows += 1
                 logger.error(error_msg)
         
         return categorized
@@ -184,6 +193,8 @@ class DataLoaderService:
                 self.errors.append(
                     f"Order {order['order_id']}: Referenced customer {order['customer_id']} does not exist"
                 )
+                self.skipped_rows += 1
+                self.success_rows -= 1  # This was counted as success during validation
         
         # Verify order items reference valid orders and products
         order_ids = {o['order_id'] for o in categorized['orders']}
@@ -192,14 +203,20 @@ class DataLoaderService:
         all_order_ids = order_ids | existing_order_ids
         
         for item in categorized['order_items']:
+            has_error = False
             if item['order_id'] not in all_order_ids:
                 self.errors.append(
                     f"Order item: Referenced order {item['order_id']} does not exist"
                 )
+                has_error = True
             if item['product_id'] not in all_product_ids:
                 self.errors.append(
                     f"Order item: Referenced product {item['product_id']} does not exist"
                 )
+                has_error = True
+            if has_error:
+                self.skipped_rows += 1
+                self.success_rows -= 1  # This was counted as success during validation
         
         return len(self.errors) == 0
     
@@ -231,9 +248,14 @@ class DataLoaderService:
                             new_customer = Customer(**customer)
                             self.session.add(new_customer)
                             customers_count += 1
+                        else:
+                            # Customer already exists, don't count as error but as skipped
+                            logger.info(f"Customer {customer.get('customer_id')} already exists, skipping")
                     except Exception as e:
                         logger.error(f"Error inserting customer {customer.get('customer_id')}: {str(e)}")
                         self.errors.append(f"Customer {customer.get('customer_id')}: {str(e)}")
+                        self.skipped_rows += 1
+                        self.success_rows -= 1
                 
                 await self.session.flush()
             
@@ -250,9 +272,13 @@ class DataLoaderService:
                             new_product = Product(**product)
                             self.session.add(new_product)
                             products_count += 1
+                        else:
+                            logger.info(f"Product {product.get('product_id')} already exists, skipping")
                     except Exception as e:
                         logger.error(f"Error inserting product {product.get('product_id')}: {str(e)}")
                         self.errors.append(f"Product {product.get('product_id')}: {str(e)}")
+                        self.skipped_rows += 1
+                        self.success_rows -= 1
                 
                 await self.session.flush()
             
@@ -269,9 +295,13 @@ class DataLoaderService:
                             new_order = Order(**order)
                             self.session.add(new_order)
                             orders_count += 1
+                        else:
+                            logger.info(f"Order {order.get('order_id')} already exists, skipping")
                     except Exception as e:
                         logger.error(f"Error inserting order {order.get('order_id')}: {str(e)}")
                         self.errors.append(f"Order {order.get('order_id')}: {str(e)}")
+                        self.skipped_rows += 1
+                        self.success_rows -= 1
                 
                 await self.session.flush()
             
@@ -285,6 +315,8 @@ class DataLoaderService:
                     except Exception as e:
                         logger.error(f"Error inserting order item: {str(e)}")
                         self.errors.append(f"Order item: {str(e)}")
+                        self.skipped_rows += 1
+                        self.success_rows -= 1
                 
                 await self.session.flush()
             
