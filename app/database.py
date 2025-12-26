@@ -15,6 +15,24 @@ if DATABASE_URL.startswith("postgresql://"):
 else:
     ASYNC_DATABASE_URL = DATABASE_URL
 
+# Remove unsupported query parameters for asyncpg
+if "?" in ASYNC_DATABASE_URL:
+    from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+    
+    parsed = urlparse(ASYNC_DATABASE_URL)
+    query_params = parse_qs(parsed.query)
+    
+    # asyncpg doesn't support these as direct kwargs or in the DSN in the way SQLAlchemy passes them
+    unsupported_params = ["sslmode", "channel_binding", "target_session_attrs"]
+    
+    for param in unsupported_params:
+        if param in query_params:
+            del query_params[param]
+        
+    new_query = urlencode(query_params, doseq=True)
+    parsed = parsed._replace(query=new_query)
+    ASYNC_DATABASE_URL = urlunparse(parsed)
+
 engine = create_async_engine(ASYNC_DATABASE_URL, echo=True, future=True)
 
 AsyncSessionLocal = async_sessionmaker(

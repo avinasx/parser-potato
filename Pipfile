@@ -4,21 +4,22 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fastapi = "==0.127.0"
-sqlalchemy = "==2.0.36"
-asyncpg = "==0.30.0"
-psycopg2-binary = "==2.9.10"
-python-multipart = "==0.0.20"
-pydantic = "==2.10.5"
-pydantic-settings = "==2.7.1"
-python-dotenv = "==1.0.1"
-aiofiles = "==24.1.0"
-pandas = "==2.2.3"
-email-validator = "==2.2.0"
-uvicorn = {extras = ["standard"], version = "==0.34.0"}
+fastapi = "*"
+sqlalchemy = "*"
+asyncpg = "*"
+psycopg2-binary = "*"
+python-multipart = "*"
+pydantic = "*"
+pydantic-settings = "*"
+python-dotenv  = "*"
+aiofiles = "*"
+pandas = "*"
+email-validator = "*"
+greenlet = "*"
+uvicorn = {extras = ["standard"], version = "*"}
 
 [dev-packages]
 
 [requires]
 python_version = "3.14"
-python_full_version = "3.14.0"
+python_full_version = "3.14"

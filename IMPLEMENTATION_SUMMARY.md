@@ -65,7 +65,7 @@ Four related tables with proper relationships:
 - Indexed columns for performance
 
 ### 9. Python 3.14+ Compatibility ✓
-- Works with Python 3.14+ (tested on 3.14.0)
+- Works with Python 3.14+ (tested on 3.14.2)
 - Managed with pipenv for consistent environments
 - All dependencies compatible
 - Type hints throughout codebase
