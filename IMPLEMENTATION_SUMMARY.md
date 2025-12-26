@@ -64,9 +64,9 @@ Four related tables with proper relationships:
 - Foreign key constraints enforced
 - Indexed columns for performance
 
-### 9. Python 3.14 Compatibility ✓
+### 9. Python 3.12+ Compatibility ✓
 - Works with Python 3.12+ (tested on 3.12.3)
-- Ready for Python 3.14 via pyenv
+- Managed with pipenv for consistent environments
 - All dependencies compatible
 - Type hints throughout codebase
 
@@ -127,7 +127,9 @@ parser-potato/
 │   ├── orders.csv
 │   ├── order_items.csv
 │   └── mixed_data.json
-├── requirements.txt             # Dependencies
+├── Pipfile                      # Pipenv dependencies
+├── Pipfile.lock                 # Locked dependency versions
+├── requirements.txt             # Dependencies (legacy)
 ├── .env.example                # Config template
 ├── README.md                   # User guide
 ├── TESTING.md                  # Testing guide
@@ -197,27 +199,32 @@ Health check endpoint
 
 ## 🚀 Quick Start
 
-1. **Install dependencies:**
+1. **Install pipenv:**
    ```bash
-   pip install -r requirements.txt
+   pip install --user pipenv
    ```
 
-2. **Configure database:**
+2. **Install dependencies:**
+   ```bash
+   pipenv install
+   ```
+
+3. **Configure database:**
    ```bash
    cp .env.example .env
    # Edit .env with your PostgreSQL credentials
    ```
 
-3. **Start server:**
+4. **Start server:**
    ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   pipenv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-4. **Access documentation:**
+5. **Access documentation:**
    - Swagger UI: http://localhost:8000/docs
    - ReDoc: http://localhost:8000/redoc
 
-5. **Upload a file:**
+6. **Upload a file:**
    ```bash
    curl -X POST "http://localhost:8000/api/upload" \
      -F "file=@sample_files/customers.csv"

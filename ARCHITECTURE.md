@@ -77,7 +77,9 @@ parser-potato/
 │   ├── orders.csv
 │   ├── order_items.csv
 │   └── mixed_data.json
-├── requirements.txt             # Python dependencies
+├── Pipfile                      # Pipenv dependencies specification
+├── Pipfile.lock                 # Locked dependency versions
+├── requirements.txt             # Python dependencies (legacy)
 ├── .env.example                # Environment variables template
 ├── README.md                   # Project documentation
 ├── TESTING.md                  # Testing guide
@@ -469,14 +471,14 @@ load_data_batch(categorized: Dict) -> Tuple[int, int, int, int]
 ### Development
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+pipenv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Production
 
 ```bash
 # Using Gunicorn with Uvicorn workers
-gunicorn app.main:app \
+pipenv run gunicorn app.main:app \
   --workers 4 \
   --worker-class uvicorn.workers.UvicornWorker \
   --bind 0.0.0.0:8000 \
@@ -486,11 +488,18 @@ gunicorn app.main:app \
 ### Docker
 
 ```dockerfile
-FROM python:3.14-slim
+FROM python:3.12-slim
 
 WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Install pipenv
+RUN pip install --no-cache-dir pipenv
+
+# Copy Pipfile and Pipfile.lock
+COPY Pipfile Pipfile.lock ./
+
+# Install dependencies
+RUN pipenv install --system --deploy
 
 COPY app/ ./app/
 COPY .env .
