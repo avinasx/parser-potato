@@ -188,13 +188,14 @@ class DataLoaderService:
         all_product_ids = product_ids | existing_product_ids
         
         # Verify orders reference valid customers
+        invalid_orders = []
         for order in categorized['orders']:
             if order['customer_id'] not in all_customer_ids:
                 self.errors.append(
                     f"Order {order['order_id']}: Referenced customer {order['customer_id']} does not exist"
                 )
-                self.skipped_rows += 1
-                self.success_rows -= 1  # This was counted as success during validation
+                invalid_orders.append(order['order_id'])
+                self._mark_row_as_skipped()
         
         # Verify order items reference valid orders and products
         order_ids = {o['order_id'] for o in categorized['orders']}
@@ -215,10 +216,15 @@ class DataLoaderService:
                 )
                 has_error = True
             if has_error:
-                self.skipped_rows += 1
-                self.success_rows -= 1  # This was counted as success during validation
+                self._mark_row_as_skipped()
         
         return len(self.errors) == 0
+    
+    def _mark_row_as_skipped(self):
+        """Helper method to mark a row as skipped due to validation/relationship errors"""
+        self.skipped_rows += 1
+        if self.success_rows > 0:
+            self.success_rows -= 1
     
     async def load_data_batch(
         self, categorized: Dict[str, List[Dict[str, Any]]]
@@ -249,13 +255,13 @@ class DataLoaderService:
                             self.session.add(new_customer)
                             customers_count += 1
                         else:
-                            # Customer already exists, don't count as error but as skipped
+                            # Customer already exists - count as skipped, not an error
                             logger.info(f"Customer {customer.get('customer_id')} already exists, skipping")
+                            self._mark_row_as_skipped()
                     except Exception as e:
                         logger.error(f"Error inserting customer {customer.get('customer_id')}: {str(e)}")
                         self.errors.append(f"Customer {customer.get('customer_id')}: {str(e)}")
-                        self.skipped_rows += 1
-                        self.success_rows -= 1
+                        self._mark_row_as_skipped()
                 
                 await self.session.flush()
             
@@ -273,12 +279,13 @@ class DataLoaderService:
                             self.session.add(new_product)
                             products_count += 1
                         else:
+                            # Product already exists - count as skipped, not an error
                             logger.info(f"Product {product.get('product_id')} already exists, skipping")
+                            self._mark_row_as_skipped()
                     except Exception as e:
                         logger.error(f"Error inserting product {product.get('product_id')}: {str(e)}")
                         self.errors.append(f"Product {product.get('product_id')}: {str(e)}")
-                        self.skipped_rows += 1
-                        self.success_rows -= 1
+                        self._mark_row_as_skipped()
                 
                 await self.session.flush()
             
@@ -296,12 +303,13 @@ class DataLoaderService:
                             self.session.add(new_order)
                             orders_count += 1
                         else:
+                            # Order already exists - count as skipped, not an error
                             logger.info(f"Order {order.get('order_id')} already exists, skipping")
+                            self._mark_row_as_skipped()
                     except Exception as e:
                         logger.error(f"Error inserting order {order.get('order_id')}: {str(e)}")
                         self.errors.append(f"Order {order.get('order_id')}: {str(e)}")
-                        self.skipped_rows += 1
-                        self.success_rows -= 1
+                        self._mark_row_as_skipped()
                 
                 await self.session.flush()
             
@@ -315,8 +323,7 @@ class DataLoaderService:
                     except Exception as e:
                         logger.error(f"Error inserting order item: {str(e)}")
                         self.errors.append(f"Order item: {str(e)}")
-                        self.skipped_rows += 1
-                        self.success_rows -= 1
+                        self._mark_row_as_skipped()
                 
                 await self.session.flush()
             
