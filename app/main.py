@@ -2,14 +2,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from app.database import init_db
 from app.api.upload import router as upload_router
 
+# Default constants
+DEFAULT_LOG_LEVEL = 'INFO'
+
 # Configure logging
+log_level = os.getenv('LOG_LEVEL', DEFAULT_LOG_LEVEL).upper()
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, log_level),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 

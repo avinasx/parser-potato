@@ -2,15 +2,18 @@
 import csv
 import json
 import io
+import os
 from typing import AsyncGenerator, Dict, Any, List
 from fastapi import UploadFile
 import aiofiles
 
+# Default constants
+DEFAULT_CHUNK_SIZE = 1000
 
 class FileParserService:
     """Service for parsing CSV and JSON files efficiently"""
     
-    CHUNK_SIZE = 1000  # Process records in chunks of 1000
+    CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', DEFAULT_CHUNK_SIZE))  # Process records in chunks, configurable via environment
     
     @staticmethod
     async def detect_file_type(filename: str) -> str:

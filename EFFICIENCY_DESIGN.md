@@ -577,5 +577,5 @@ This design enables handling files of virtually unlimited size with constant, pr
 ---
 
 **Document Version:** 1.0  
-**Last Updated:** December 2024  
-**Author:** Parser Potato Development Team
+**Last Updated:** December 2025  
+**Author:** [avinasx](https://github.com/avinasx)
