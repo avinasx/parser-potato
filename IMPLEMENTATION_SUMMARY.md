@@ -64,7 +64,14 @@ Four related tables with proper relationships:
 - Foreign key constraints enforced
 - Indexed columns for performance
 
-### 9. Python 3.14+ Compatibility ✓
+### 9. Error Reporting and Tracking ✓
+- **Success/Skipped Counts**: Tracks successful vs skipped rows separately
+- **Detailed Error Messages**: Each error includes row number and specific reason
+- **Granular Tracking**: Errors tracked at validation, relationship verification, and insertion stages
+- **Duplicate Handling**: Existing records are counted as skipped (not errors)
+- **Comprehensive Reporting**: API returns both statistics and error details
+
+### 10. Python 3.14+ Compatibility ✓
 - Works with Python 3.14+ (tested on 3.14.2)
 - Managed with pipenv for consistent environments
 - All dependencies compatible
@@ -177,13 +184,20 @@ Upload and process CSV/JSON files
 {
   "message": "File processed successfully",
   "records_processed": 1000,
+  "success_rows_count": 950,
+  "skipped_rows_count": 50,
   "customers_created": 250,
   "products_created": 150,
   "orders_created": 300,
   "order_items_created": 300,
-  "errors": []
+  "errors": ["Row 10: Validation error - invalid email", "Row 25: Order O999 references non-existent customer"]
 }
 ```
+
+The response now includes:
+- `success_rows_count`: Number of rows successfully processed and inserted
+- `skipped_rows_count`: Number of rows skipped due to validation errors, foreign key violations, or duplicates
+- `errors`: Array of detailed error messages with row numbers and reasons
 
 ### GET /api/health
 Health check endpoint
@@ -259,6 +273,7 @@ Health check endpoint
 - **README.md**: User guide with installation and usage
 - **TESTING.md**: Comprehensive testing instructions
 - **ARCHITECTURE.md**: System design and technical details
+- **EFFICIENCY_DESIGN.md**: Detailed explanation of streaming architecture and memory efficiency
 - **API Docs**: Auto-generated OpenAPI documentation
 - **Code Comments**: In-line documentation throughout
 
@@ -274,6 +289,8 @@ Health check endpoint
 6. ✅ Zero security vulnerabilities
 7. ✅ Scalable and maintainable architecture
 8. ✅ Interactive API documentation
+9. ✅ Detailed error reporting with success/skipped counts
+10. ✅ Comprehensive efficiency design documentation
 
 ---
 
