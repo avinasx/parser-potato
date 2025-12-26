@@ -1,0 +1,6 @@
+customer_id,name,email,phone,address
+C001,John Doe,john.doe@example.com,555-0100,123 Main St
+C002,Jane Smith,jane.smith@example.com,555-0101,456 Oak Ave
+C003,Bob Johnson,bob.johnson@example.com,555-0102,789 Pine Rd
+C004,Alice Williams,alice.williams@example.com,555-0103,321 Elm St
+C005,Charlie Brown,charlie.brown@example.com,555-0104,654 Maple Dr

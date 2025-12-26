@@ -1,0 +1,26 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+fastapi = "*"
+sqlalchemy = "*"
+asyncpg = "*"
+psycopg2-binary = "*"
+python-multipart = "*"
+pydantic = "*"
+pydantic-settings = "*"
+python-dotenv  = "*"
+aiofiles = "*"
+pandas = "*"
+email-validator = "*"
+greenlet = "*"
+markdown = "*"
+uvicorn = {extras = ["standard"], version = "*"}
+
+[dev-packages]
+
+[requires]
+python_version = "3.14"
+python_full_version = "3.14"
