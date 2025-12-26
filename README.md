@@ -115,11 +115,13 @@ Upload and process a CSV or JSON file.
 {
   "message": "File processed successfully",
   "records_processed": 1000,
+  "success_rows_count": 950,
+  "skipped_rows_count": 50,
   "customers_created": 250,
   "products_created": 150,
   "orders_created": 300,
   "order_items_created": 300,
-  "errors": []
+  "errors": ["Row 10: Validation error - invalid email", "Row 25: Order O999 references non-existent customer"]
 }
 ```
 
@@ -205,6 +207,8 @@ O002,P002,1,29.99,29.99
 3. **Async I/O**: All database operations are asynchronous for better concurrency
 4. **Connection Pooling**: SQLAlchemy manages database connections efficiently
 
+For detailed documentation on how the streaming architecture efficiently handles large files without full in-memory loads, see [EFFICIENCY_DESIGN.md](EFFICIENCY_DESIGN.md).
+
 ### Data Flow
 
 1. File upload → File type detection
@@ -217,10 +221,14 @@ O002,P002,1,29.99,29.99
 
 ### Error Handling
 
-- Row-level error tracking
+- Row-level error tracking with detailed error messages
 - Transaction rollback on critical errors
-- Detailed error messages with row numbers
+- Detailed error messages with row numbers and reasons
 - Continues processing valid records even if some fail
+- Returns comprehensive statistics:
+  - `success_rows_count`: Number of rows successfully processed
+  - `skipped_rows_count`: Number of rows skipped due to validation/insertion errors
+  - `errors`: Array of error messages with row numbers and reasons
 
 ## Testing
 

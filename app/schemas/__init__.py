@@ -72,6 +72,8 @@ class UploadResponse(BaseModel):
     """Response schema for file upload"""
     message: str
     records_processed: int
+    success_rows_count: int = 0
+    skipped_rows_count: int = 0
     customers_created: int = 0
     products_created: int = 0
     orders_created: int = 0

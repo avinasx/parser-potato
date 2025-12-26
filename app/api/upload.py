@@ -41,6 +41,8 @@ async def upload_file(
     
     # Initialize counters
     total_records = 0
+    total_success_rows = 0
+    total_skipped_rows = 0
     customers_created = 0
     products_created = 0
     orders_created = 0
@@ -78,6 +80,10 @@ async def upload_file(
                     logger.error(f"Error loading data batch: {str(e)}")
                     all_errors.append(f"Database error: {str(e)}")
             
+            # Aggregate counts from this chunk
+            total_success_rows += loader.success_rows
+            total_skipped_rows += loader.skipped_rows
+            
             # Collect errors from this chunk
             all_errors.extend(loader.errors)
     
@@ -88,6 +94,8 @@ async def upload_file(
     return UploadResponse(
         message="File processed successfully" if not all_errors else "File processed with errors",
         records_processed=total_records,
+        success_rows_count=total_success_rows,
+        skipped_rows_count=total_skipped_rows,
         customers_created=customers_created,
         products_created=products_created,
         orders_created=orders_created,
