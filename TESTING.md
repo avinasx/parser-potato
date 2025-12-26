@@ -289,7 +289,7 @@ Memory usage should remain constant regardless of file size due to streaming pro
 
 2. **Import errors:**
    - Run `pipenv install`
-   - Ensure you're using Python 3.12+
+   - Ensure you're using Python 3.14+
 
 3. **File upload fails:**
    - Check file format (CSV or JSON)
