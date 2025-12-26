@@ -14,7 +14,7 @@ A high-performance REST API built with FastAPI for uploading and parsing large C
 
 ## Requirements
 
-- Python 3.14 (managed with pyenv)
+- Python 3.12+ (managed with pipenv)
 - PostgreSQL 17
 - FastAPI 0.127.0
 
@@ -26,24 +26,17 @@ git clone https://github.com/avinasx/parser-potato.git
 cd parser-potato
 ```
 
-2. Install Python 3.14 using pyenv:
+2. Install pipenv (if not already installed):
 ```bash
-pyenv install 3.14.0
-pyenv local 3.14.0
+pip install --user pipenv
 ```
 
-3. Create and activate a virtual environment:
+3. Install dependencies and create virtual environment:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+pipenv install
 ```
 
-4. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-5. Configure environment variables:
+4. Configure environment variables:
 ```bash
 cp .env.example .env
 # Edit .env and set your PostgreSQL connection string
@@ -91,8 +84,14 @@ The application will automatically create the necessary tables on startup. Ensur
 
 ## Running the Application
 
-Start the server:
+Start the server using pipenv:
 ```bash
+pipenv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Alternatively, activate the pipenv shell and run directly:
+```bash
+pipenv shell
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 

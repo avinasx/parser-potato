@@ -8,7 +8,7 @@ Run the following tests to verify the application structure and logic without ne
 
 ### 1. Test Imports
 ```bash
-python test_imports.py
+pipenv run python test_imports.py
 ```
 
 This verifies:
@@ -18,7 +18,7 @@ This verifies:
 
 ### 2. Test File Parser
 ```bash
-python test_parser.py
+pipenv run python test_parser.py
 ```
 
 This verifies:
@@ -28,7 +28,7 @@ This verifies:
 
 ### 3. Test Data Loader
 ```bash
-python test_data_loader.py
+pipenv run python test_data_loader.py
 ```
 
 This verifies:
@@ -54,7 +54,7 @@ This verifies:
 ### Start the Server
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+pipenv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Access the API Documentation
@@ -288,7 +288,7 @@ Memory usage should remain constant regardless of file size due to streaming pro
    - Verify database exists
 
 2. **Import errors:**
-   - Run `pip install -r requirements.txt`
+   - Run `pipenv install`
    - Ensure you're using Python 3.12+
 
 3. **File upload fails:**
