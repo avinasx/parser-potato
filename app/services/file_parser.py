@@ -10,10 +10,16 @@ import aiofiles
 # Default constants
 DEFAULT_CHUNK_SIZE = 1000
 
+# Get CHUNK_SIZE from environment with validation
+try:
+    CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', DEFAULT_CHUNK_SIZE))
+except (ValueError, TypeError):
+    CHUNK_SIZE = DEFAULT_CHUNK_SIZE
+
 class FileParserService:
     """Service for parsing CSV and JSON files efficiently"""
     
-    CHUNK_SIZE = int(os.getenv('CHUNK_SIZE', DEFAULT_CHUNK_SIZE))  # Process records in chunks, configurable via environment
+    CHUNK_SIZE = CHUNK_SIZE  # Process records in chunks, configurable via environment
     
     @staticmethod
     async def detect_file_type(filename: str) -> str:
