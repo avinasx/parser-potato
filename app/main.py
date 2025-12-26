@@ -12,9 +12,15 @@ from app.api.upload import router as upload_router
 DEFAULT_LOG_LEVEL = 'INFO'
 
 # Configure logging
-log_level = os.getenv('LOG_LEVEL', DEFAULT_LOG_LEVEL).upper()
+log_level_str = os.getenv('LOG_LEVEL', DEFAULT_LOG_LEVEL).upper()
+# Validate log level and fallback to default if invalid
+try:
+    log_level = getattr(logging, log_level_str)
+except AttributeError:
+    log_level = getattr(logging, DEFAULT_LOG_LEVEL)
+    
 logging.basicConfig(
-    level=getattr(logging, log_level),
+    level=log_level,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
