@@ -64,8 +64,8 @@ Four related tables with proper relationships:
 - Foreign key constraints enforced
 - Indexed columns for performance
 
-### 9. Python 3.12+ Compatibility ✓
-- Works with Python 3.12+ (tested on 3.12.3)
+### 9. Python 3.14+ Compatibility ✓
+- Works with Python 3.14+ (tested on 3.14.0)
 - Managed with pipenv for consistent environments
 - All dependencies compatible
 - Type hints throughout codebase

@@ -14,7 +14,7 @@ A high-performance REST API built with FastAPI for uploading and parsing large C
 
 ## Requirements
 
-- Python 3.12+ (managed with pipenv)
+- Python 3.14+ (managed with pipenv)
 - PostgreSQL 17
 - FastAPI 0.127.0
 
