@@ -1,82 +1,69 @@
 # Testing Guide
 
-This document describes how to test the Parser Potato API.
+## Overview
 
-## Quick Tests (No Database Required)
+This guide provides comprehensive testing instructions for the Parser Potato REST API built with Java Spring Boot.
 
-Run the following tests to verify the application structure and logic without needing a database:
+---
 
-### 1. Test Imports
-```bash
-pipenv run python test_imports.py
-```
+## Prerequisites
 
-This verifies:
-- All modules can be imported successfully
-- File type detection works
-- Schema validation works
+- Java 25.0.1+
+- Maven 3.9.12+
+- PostgreSQL 17
+- Sample test files in `sample_files/` directory
 
-### 2. Test File Parser
-```bash
-pipenv run python test_parser.py
-```
+---
 
-This verifies:
-- CSV parsing with streaming
-- JSON parsing with streaming
-- Record chunking for batch processing
+## Quick Start Testing
 
-### 3. Test Data Loader
-```bash
-pipenv run python test_data_loader.py
-```
-
-This verifies:
-- Automatic table type identification
-- Data preparation and type conversion
-- Record categorization logic
-
-## Full API Testing (Requires Database)
-
-### Prerequisites
-
-1. Install and run PostgreSQL 17
-2. Create a database:
-   ```bash
-   createdb parser_potato
-   ```
-3. Configure your `.env` file:
-   ```bash
-   cp .env.example .env
-   # Edit .env and set DATABASE_URL to your PostgreSQL connection string
-   ```
-
-### Start the Server
+### 1. Start the Application
 
 ```bash
-pipenv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Using Maven
+mvn spring-boot:run
+
+# Or using the JAR
+mvn clean package
+java -jar target/parser-potato-1.0.0.jar
 ```
 
-### Access the API Documentation
+### 2. Verify Application is Running
 
-Open your browser and go to:
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+```bash
+# Health check
+curl http://localhost:8000/api/health
 
-### Test File Upload
+# Expected response:
+# {"status":"healthy"}
+```
 
-#### Using the Swagger UI
+### 3. Access Swagger UI
 
-1. Go to http://localhost:8000/docs
-2. Click on the POST `/api/upload` endpoint
-3. Click "Try it out"
-4. Upload one of the sample files from the `sample_files/` directory
-5. Click "Execute"
+Open your browser: **http://localhost:8000/swagger-ui/index.html/**
+
+This provides interactive API documentation where you can test all endpoints.
+
+---
+
+## Testing Approaches
+
+### 1. Interactive Testing (Swagger UI)
+
+**Best for:** Quick manual testing and exploration
+
+1. Navigate to http://localhost:8000/swagger-ui/index.html/
+2. Click on **POST /api/upload**
+3. Click **Try it out**
+4. Choose a file from `sample_files/` directory
+5. Click **Execute**
 6. Review the response
 
-#### Using curl
+### 2. Command Line Testing (curl)
 
-**Upload customers:**
+**Best for:** Automated scripts and CI/CD
+
+#### Upload Customers
 ```bash
 curl -X POST "http://localhost:8000/api/upload" \
   -H "accept: application/json" \
@@ -84,127 +71,194 @@ curl -X POST "http://localhost:8000/api/upload" \
   -F "file=@sample_files/customers.csv"
 ```
 
-**Upload products:**
+#### Upload Products
 ```bash
 curl -X POST "http://localhost:8000/api/upload" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@sample_files/products.csv"
 ```
 
-**Upload orders:**
+#### Upload Orders
 ```bash
 curl -X POST "http://localhost:8000/api/upload" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@sample_files/orders.csv"
 ```
 
-**Upload order items:**
+#### Upload Order Items
 ```bash
 curl -X POST "http://localhost:8000/api/upload" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@sample_files/order_items.csv"
 ```
 
-**Upload mixed data (JSON):**
+#### Upload Mixed Data (JSON)
 ```bash
 curl -X POST "http://localhost:8000/api/upload" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
   -F "file=@sample_files/mixed_data.json"
 ```
 
-#### Using Python
+### 3. Programmatic Testing (Java)
 
-```python
-import requests
+**Best for:** Integration tests
 
-# Upload a CSV file
-with open('sample_files/customers.csv', 'rb') as f:
-    files = {'file': ('customers.csv', f, 'text/csv')}
-    response = requests.post('http://localhost:8000/api/upload', files=files)
-    print(response.json())
-
-# Upload a JSON file
-with open('sample_files/mixed_data.json', 'rb') as f:
-    files = {'file': ('mixed_data.json', f, 'application/json')}
-    response = requests.post('http://localhost:8000/api/upload', files=files)
-    print(response.json())
+```java
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@AutoConfigureMockMvc
+class FileUploadIntegrationTest {
+    
+    @Autowired
+    private MockMvc mockMvc;
+    
+    @Test
+    void testUploadCsvFile() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "customers.csv",
+            "text/csv",
+            "customer_id,name,email\nC001,Test,test@example.com".getBytes()
+        );
+        
+        mockMvc.perform(multipart("/api/upload").file(file))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.message").value("File processed successfully"))
+            .andExpect(jsonPath("$.customersCreated").value(1));
+    }
+}
 ```
 
-### Expected Response
+---
+
+## Unit Testing
+
+### Running Tests
+
+```bash
+# Run all unit tests
+mvn test
+
+# Run specific test class
+mvn test -Dtest=FileParserServiceTest
+
+# Run with coverage
+mvn test jacoco:report
+```
+
+### Test Structure
+
+```
+src/test/java/com/parserpotato/
+├── service/
+│   ├── FileParserServiceTest.java      # CSV/JSON parsing tests
+│   └── DataLoaderServiceTest.java       # Validation and loading tests
+├── controller/
+│   └── UploadControllerTest.java        # API endpoint tests
+└── integration/
+    └── FileUploadIntegrationTest.java   # End-to-end tests
+```
+
+### Example Unit Test
+
+```java
+@ExtendWith(MockitoExtension.class)
+class FileParserServiceTest {
+    
+    @InjectMocks
+    private FileParserService fileParserService;
+    
+    @Test
+    void testDetectFileType() {
+        assertEquals("csv", fileParserService.detectFileType("test.csv"));
+        assertEquals("json", fileParserService.detectFileType("test.json"));
+    }
+    
+    @Test
+    void testDetectInvalidFileType() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            fileParserService.detectFileType("test.txt");
+        });
+    }
+}
+```
+
+---
+
+## Integration Testing
+
+### Setup Test Database
+
+```bash
+# Create test database
+psql -U postgres -c "CREATE DATABASE parser_potato_test;"
+```
+
+### Configure Test Properties
+
+Create `src/test/resources/application-test.properties`:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/parser_potato_test
+spring.jpa.hibernate.ddl-auto=create-drop
+```
+
+### Run Integration Tests
+
+```bash
+# Run all tests including integration
+mvn verify
+
+# Run only integration tests
+mvn test -Dtest=*IntegrationTest
+```
+
+---
+
+## Expected Responses
+
+### Successful Upload
 
 ```json
 {
   "message": "File processed successfully",
-  "records_processed": 5,
-  "customers_created": 5,
-  "products_created": 0,
-  "orders_created": 0,
-  "order_items_created": 0,
+  "recordsProcessed": 5,
+  "successRowsCount": 5,
+  "skippedRowsCount": 0,
+  "customersCreated": 5,
+  "productsCreated": 0,
+  "ordersCreated": 0,
+  "orderItemsCreated": 0,
   "errors": []
 }
 ```
 
-## Testing Large Files
+### Upload with Errors
 
-### Generate a Large CSV File
-
-Create a script to generate a large test file:
-
-```python
-import csv
-
-# Generate 100,000 customer records
-with open('large_customers.csv', 'w', newline='') as f:
-    writer = csv.writer(f)
-    writer.writerow(['customer_id', 'name', 'email', 'phone', 'address'])
-    
-    for i in range(100000):
-        writer.writerow([
-            f'C{i:06d}',
-            f'Customer {i}',
-            f'customer{i}@example.com',
-            f'555-{i:04d}',
-            f'{i} Test Street'
-        ])
-
-print("Generated large_customers.csv with 100,000 records")
+```json
+{
+  "message": "File processed successfully",
+  "recordsProcessed": 10,
+  "successRowsCount": 8,
+  "skippedRowsCount": 2,
+  "customersCreated": 8,
+  "productsCreated": 0,
+  "ordersCreated": 0,
+  "orderItemsCreated": 0,
+  "errors": [
+    "Row 3: Email must be valid",
+    "Row 7: Customer ID is required"
+  ]
+}
 ```
 
-Then upload it:
+---
 
-```bash
-curl -X POST "http://localhost:8000/api/upload" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@large_customers.csv"
-```
+## Database Verification
 
-### Monitor Performance
-
-You can monitor the application's memory usage and processing time:
-
-```bash
-# Monitor with time
-time curl -X POST "http://localhost:8000/api/upload" \
-  -H "accept: application/json" \
-  -H "Content-Type: multipart/form-data" \
-  -F "file=@large_customers.csv"
-```
-
-## Verify Database Contents
-
-After uploading files, verify the data in PostgreSQL:
+After uploading files, verify data in PostgreSQL:
 
 ```bash
 psql parser_potato
 ```
 
 ```sql
--- Check counts
+-- Check record counts
 SELECT 'customers' as table_name, COUNT(*) as count FROM customers
 UNION ALL
 SELECT 'products', COUNT(*) FROM products
@@ -231,78 +285,245 @@ LEFT JOIN order_items oi ON o.order_id = oi.order_id
 GROUP BY o.order_id, c.name, o.total_amount;
 ```
 
+---
+
 ## Error Testing
 
-### Test Invalid Files
+### 1. Invalid File Type
 
-1. **Wrong file type:**
-   ```bash
-   echo "test" > test.txt
-   curl -X POST "http://localhost:8000/api/upload" \
-     -H "accept: application/json" \
-     -H "Content-Type: multipart/form-data" \
-     -F "file=@test.txt"
-   ```
-   Expected: 400 error with message about unsupported file type
+```bash
+echo "test content" > test.txt
+curl -X POST "http://localhost:8000/api/upload" -F "file=@test.txt"
+```
 
-2. **Invalid data:**
-   Create a CSV with invalid email:
-   ```csv
-   customer_id,name,email
-   C001,Test User,invalid-email
-   ```
-   Expected: Errors array in response with validation details
+**Expected:** 400 Bad Request - "Unsupported file type"
 
-3. **Missing required fields:**
-   ```csv
-   customer_id,name
-   C001,Test User
-   ```
-   Expected: Errors about missing required field (email)
+### 2. Invalid Email
 
-4. **Invalid foreign key:**
-   ```csv
-   order_id,customer_id,order_date,status,total_amount
-   O999,C999,2024-01-01,pending,100.0
-   ```
-   Expected: Error about non-existent customer
+Create `invalid_customer.csv`:
+```csv
+customer_id,name,email
+C001,Test User,invalid-email
+```
 
-## Performance Benchmarks
+**Expected:** Error in response: "Row 1: Email must be valid"
 
-Expected performance on standard hardware:
+### 3. Missing Required Field
 
-- **Small files** (<1MB, <1000 records): < 1 second
-- **Medium files** (1-10MB, 1K-10K records): 1-5 seconds
-- **Large files** (10-100MB, 10K-100K records): 5-30 seconds
-- **Very large files** (>100MB, >100K records): 30+ seconds
+Create `missing_field.csv`:
+```csv
+customer_id,name
+C001,Test User
+```
 
-Memory usage should remain constant regardless of file size due to streaming processing.
+**Expected:** Error: "Row 1: Email is required"
+
+### 4. Invalid Foreign Key
+
+Create `invalid_order.csv`:
+```csv
+order_id,customer_id,order_date,status,total_amount
+O001,C999,2024-01-01 10:00:00,pending,100.0
+```
+
+**Expected:** Error: "Order O001 references non-existent customer: C999"
+
+---
+
+## Performance Testing
+
+### Generate Large Test File
+
+```java
+// Create a simple Java program to generate test data
+import java.io.*;
+
+public class GenerateLargeCSV {
+    public static void main(String[] args) throws IOException {
+        try (PrintWriter writer = new PrintWriter("large_customers.csv")) {
+            writer.println("customer_id,name,email,phone,address");
+            
+            for (int i = 0; i < 100000; i++) {
+                writer.printf("C%06d,Customer %d,customer%d@example.com,555-%04d,%d Test St%n",
+                    i, i, i, i, i);
+            }
+        }
+        System.out.println("Generated large_customers.csv with 100,000 records");
+    }
+}
+```
+
+### Upload and Measure
+
+```bash
+# Time the upload
+time curl -X POST "http://localhost:8000/api/upload" \
+  -F "file=@large_customers.csv"
+```
+
+### Expected Performance
+
+| File Size | Records | Processing Time | Throughput |
+|-----------|---------|-----------------|------------|
+| < 1 MB | < 1,000 | < 1 second | 1,000+ rec/sec |
+| 1-10 MB | 1K-10K | 1-5 seconds | 2,000+ rec/sec |
+| 10-100 MB | 10K-100K | 5-30 seconds | 2,500+ rec/sec |
+| > 100 MB | > 100K | 30+ seconds | 2,500+ rec/sec |
+
+**Note:** Memory usage remains constant due to streaming processing.
+
+---
+
+## Monitoring
+
+### Application Logs
+
+```bash
+# View logs while running
+mvn spring-boot:run
+
+# Or tail log file
+tail -f logs/parser-potato.log
+```
+
+### JVM Monitoring
+
+```bash
+# Monitor with JConsole
+jconsole
+
+# Monitor with VisualVM
+visualvm
+```
+
+### Metrics Endpoint (if Actuator enabled)
+
+```bash
+curl http://localhost:8000/actuator/health
+curl http://localhost:8000/actuator/metrics
+```
+
+---
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Database connection error:**
-   - Ensure PostgreSQL is running
-   - Check DATABASE_URL in .env file
-   - Verify database exists
+#### 1. Database Connection Error
+```
+Error: Unable to connect to database
+```
 
-2. **Import errors:**
-   - Run `pipenv install`
-   - Ensure you're using Python 3.14+
+**Solutions:**
+- Ensure PostgreSQL is running: `pg_ctl status`
+- Check `.env` file has correct credentials
+- Verify database exists: `psql -l`
+- Test connection: `psql parser_potato`
 
-3. **File upload fails:**
-   - Check file format (CSV or JSON)
-   - Verify file encoding is UTF-8
-   - Check file size (default max: 100MB)
+#### 2. Port Already in Use
+```
+Error: Port 8000 is already in use
+```
+
+**Solutions:**
+- Stop the existing application
+- Or change port in `application.properties`:
+  ```properties
+  server.port=8080
+  ```
+
+#### 3. Maven Build Fails
+```
+Error: Maven build failed
+```
+
+**Solutions:**
+- Verify Java version: `java -version`
+- Clean and rebuild: `mvn clean install`
+- Check Maven version: `mvn -version`
+
+#### 4. Lombok Annotations Not Working
+```
+Error: Cannot find symbol: method getName()
+```
+
+**Solutions:**
+- Ensure IDE has Lombok plugin installed
+- Rebuild project: `mvn clean compile`
+- Check annotation processor is enabled
 
 ### Enable Debug Logging
 
-Set logging level to DEBUG in `app/main.py`:
+Update `application.properties`:
 
-```python
-logging.basicConfig(
-    level=logging.DEBUG,  # Changed from INFO
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+```properties
+logging.level.com.parserpotato=DEBUG
+logging.level.org.springframework.web=DEBUG
 ```
+
+---
+
+## CI/CD Testing
+
+### GitHub Actions Example
+
+```yaml
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: parser_potato_test
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Set up JDK 25
+        uses: actions/setup-java@v2
+        with:
+          java-version: '25'
+          
+      - name: Run tests
+        run: mvn clean verify
+        env:
+          DATABASE_URL: jdbc:postgresql://localhost:5432/parser_potato_test?user=postgres&password=postgres
+```
+
+---
+
+## Best Practices
+
+1. **Always test with small files first** before large files
+2. **Use Swagger UI** for interactive testing during development
+3. **Write unit tests** for new features
+4. **Run integration tests** before committing
+5. **Monitor memory usage** during large file uploads
+6. **Check database** after uploads to verify data integrity
+7. **Test error cases** to ensure proper error handling
+8. **Use test database** separate from development/production
+
+---
+
+## Summary
+
+- ✅ **Swagger UI**: Interactive testing at `/swagger-ui/`
+- ✅ **Unit Tests**: `mvn test`
+- ✅ **Integration Tests**: `mvn verify`
+- ✅ **Performance Tests**: Use large generated files
+- ✅ **Database Verification**: Query PostgreSQL after uploads
+- ✅ **Error Testing**: Test invalid inputs and edge cases
+
+For more information, see:
+- [README.md](README.md) - Setup and installation
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System design
+- [EFFICIENCY_DESIGN.md](EFFICIENCY_DESIGN.md) - Performance details

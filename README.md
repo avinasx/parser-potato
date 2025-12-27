@@ -1,63 +1,91 @@
 # Parser Potato - CSV/JSON File Parser REST API
 
-A high-performance REST API built with FastAPI for uploading and parsing large CSV/JSON files into a PostgreSQL database.
+A high-performance Spring Boot 4.0.1 REST API for uploading and parsing large CSV/JSON files into a PostgreSQL database. Supports streaming processing, multi-table relationships, data validation, and batch insertions.
 
 ## Features
 
-- **Streaming File Processing**: Handle large files efficiently without loading them entirely in memory
-- **Multi-Format Support**: Process both CSV and JSON files (including NDJSON)
-- **Multi-Table Architecture**: Automatically map data to related database tables (Customers, Products, Orders, Order Items)
-- **Data Validation**: Comprehensive schema and data quality validation
-- **Relationship Validation**: Verify foreign key relationships before insertion
-- **Batch Processing**: Efficient batch insertion for optimal performance
-- **Error Handling**: Detailed error reporting with row-level granularity
+- **Multi-format Support**: Parse CSV files and JSON files (arrays or NDJSON)
+- **Streaming Processing**: Handle files of any size with constant memory usage
+- **Multi-table Support**: Automatically categorize and insert data into related tables:
+  - Customers, Products, Orders, Order Items
+- **Data Validation**: Jakarta Bean Validation for data integrity
+- **Relationship Validation**: Verify foreign key constraints before insertion
+- **Batch Processing**: Efficient batch insertions with Hibernate
+- **Error Tracking**: Detailed row-level error reporting
+- **Interactive Documentation**: Swagger UI for easy API testing
+- **Production Ready**: Connection pooling, transaction management, comprehensive logging
 
-## Requirements
+## Technology Stack
 
-- Python 3.14+ (managed with pipenv)
+- **Java 25.0.1**
+- **Spring Boot 4.0.1**
+- **PostgreSQL 17**
+- **Maven 3.9.12**
+- **Apache Commons CSV 1.11.0** for CSV parsing
+- **Jackson** for JSON parsing
+- **Hibernate** for ORM
+- **SpringDoc OpenAPI** for API documentation
+
+## Prerequisites
+
+- Java 25.0.1 or higher
+- Maven 3.9.12 or higher
 - PostgreSQL 17
-- FastAPI 0.127.0
 
-## Documentation
-[Install Postgress and provide the link in .env file]
-- [Project Overview (README)](README.md)
-- [System Architecture](ARCHITECTURE.md)
-- [Efficiency & Design](EFFICIENCY_DESIGN.md)
-- [Testing Guide](TESTING.md)
-- [Implementation Summary](IMPLEMENTATION_SUMMARY.md)
+## Quick Start
 
-## Installation
-
-1. Clone the repository:
+1. Clone and navigate to the project:
 ```bash
-git clone https://github.com/avinasx/parser-potato.git
+git clone <repository-url>
 cd parser-potato
 ```
 
-2. Install pipenv (if not already installed):
+2. Verify prerequisites:
 ```bash
-pip install --user pipenv
+java -version  # Should show Java 25.0.1 or higher
+mvn -version   # Should show Maven 3.9.12 or higher
 ```
 
-3. Install dependencies and create virtual environment:
+3. **Configure Database (Local Development)**:
+
+Parser Potato uses **Spring profiles** for configuration (Java standard).
+
+**Step 1:** Copy the example file:
 ```bash
-pipenv install
+cp application-local.properties.example src/main/resources/application-local.properties
 ```
 
-4. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env and set your PostgreSQL connection string
+**Step 2:** Edit `src/main/resources/application-local.properties` with your database:
+```properties
+spring.datasource.url=jdbc:postgresql://your-host:5432/your-database?user=username&password=password&sslmode=require
+app.chunk-size=1000
 ```
 
-Example `.env` file:
+**Note:** `application-local.properties` is gitignored (safe for credentials).
+
+4. **Run the Application**:
+
+**Local Development (use `local` profile):**
+```bash
+# ⚠️ IMPORTANT: Always specify the 'local' profile
+mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
-DATABASE_URL=postgresql://username:password@localhost:5432/parser_potato
+
+**Production (use environment variable):**
+```bash
+export DATABASE_URL="jdbc:postgresql://..."
+mvn clean package
+java -jar target/parser-potato-1.0.0.jar
 ```
 
 ## Database Setup
 
-The application will automatically create the necessary tables on startup. Ensure your PostgreSQL server is running and the database exists.
+The application will automatically create the necessary tables on startup using JPA/Hibernate. Ensure your PostgreSQL server is running:
+
+```bash
+# For local PostgreSQL (if needed)
+psql -U postgres -c "CREATE DATABASE parser_potato;"
+```
 
 ## Database Schema
 
@@ -74,190 +102,302 @@ The application will automatically create the necessary tables on startup. Ensur
 - `price` (Float, Required, > 0)
 - `description` (Text, Optional)
 - `category` (String, Optional)
-- `stock_quantity` (Integer, Optional, >= 0)
+- `stock_quantity` (Integer, Optional)
 
 ### Orders Table
 - `order_id` (String, Primary Key)
-- `customer_id` (Foreign Key to Customers)
+- `customer_id` (Foreign Key → Customers, Required)
 - `order_date` (DateTime, Required)
-- `status` (String, Required: pending/processing/shipped/delivered/cancelled)
-- `total_amount` (Float, Required, >= 0)
+- `status` (String, Required: pending/processing/completed/cancelled)
+- `total_amount` (Float, Required, ≥ 0)
 
 ### Order Items Table
-- `order_id` (Foreign Key to Orders)
-- `product_id` (Foreign Key to Products)
+- `order_id` (Foreign Key → Orders, Required)
+- `product_id` (Foreign Key → Products, Required)
 - `quantity` (Integer, Required, > 0)
 - `unit_price` (Float, Required, > 0)
-- `subtotal` (Float, Required, >= 0)
+- `subtotal` (Float, Required, ≥ 0)
 
-## Running the Application
+## API Documentation
 
-Start the server using pipenv:
-```bash
-pipenv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+Once the application is running, you can access:
 
-Alternatively, activate the pipenv shell and run directly:
-```bash
-pipenv shell
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-The API will be available at:
-- **API**: http://localhost:8000
-- **Interactive Docs**: http://localhost:8000/docs
-- **Alternative Docs**: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:8000/swagger-ui/index.html/index.html
+- **Health Check**: http://localhost:8000/api/health
 
 ## API Endpoints
 
 ### POST /api/upload
+
 Upload and process a CSV or JSON file.
 
 **Request:**
 - Method: POST
 - Content-Type: multipart/form-data
-- Body: file (CSV or JSON)
+- Parameter: `file` (CSV or JSON file)
 
 **Response:**
 ```json
 {
   "message": "File processed successfully",
-  "records_processed": 1000,
-  "success_rows_count": 950,
-  "skipped_rows_count": 50,
-  "customers_created": 250,
-  "products_created": 150,
-  "orders_created": 300,
-  "order_items_created": 300,
-  "errors": ["Row 10: Validation error - invalid email", "Row 25: Order O999 references non-existent customer"]
+  "recordsProcessed": 1000,
+  "successRowsCount": 950,
+  "skippedRowsCount": 50,
+  "customersCreated": 250,
+  "productsCreated": 200,
+  "ordersCreated": 300,
+  "orderItemsCreated": 200,
+  "errors": [
+    "Row 10: Email must be valid",
+    "Row 25: Customer C999 not found"
+  ]
 }
 ```
 
 ### GET /api/health
+
 Health check endpoint.
+
+**Response:**
+```json
+{
+  "status": "healthy"
+}
+```
 
 ## File Format Examples
 
 ### CSV Format
-
-**customers.csv:**
 ```csv
 customer_id,name,email,phone,address
-C001,John Doe,john@example.com,555-0100,123 Main St
-C002,Jane Smith,jane@example.com,555-0101,456 Oak Ave
+C001,John Doe,john@example.com,555-1234,123 Main St
+C002,Jane Smith,jane@example.com,555-5678,456 Oak Ave
 ```
 
-**products.csv:**
-```csv
-product_id,name,price,description,category,stock_quantity
-P001,Laptop,999.99,High-performance laptop,Electronics,50
-P002,Mouse,29.99,Wireless mouse,Electronics,200
-```
-
-**orders.csv:**
-```csv
-order_id,customer_id,order_date,status,total_amount
-O001,C001,2024-01-15 10:30:00,delivered,1029.98
-O002,C002,2024-01-16 14:20:00,processing,29.99
-```
-
-**order_items.csv:**
-```csv
-order_id,product_id,quantity,unit_price,subtotal
-O001,P001,1,999.99,999.99
-O001,P002,1,29.99,29.99
-O002,P002,1,29.99,29.99
-```
-
-### JSON Format
-
-**data.json:**
+### JSON Format (Array)
 ```json
 [
   {
     "customer_id": "C001",
     "name": "John Doe",
     "email": "john@example.com",
-    "phone": "555-0100",
+    "phone": "555-1234",
     "address": "123 Main St"
   },
   {
-    "product_id": "P001",
-    "name": "Laptop",
-    "price": 999.99,
-    "description": "High-performance laptop",
-    "category": "Electronics",
-    "stock_quantity": 50
-  },
-  {
-    "order_id": "O001",
-    "customer_id": "C001",
-    "order_date": "2024-01-15 10:30:00",
-    "status": "delivered",
-    "total_amount": 1029.98
-  },
-  {
-    "order_id": "O001",
-    "product_id": "P001",
-    "quantity": 1,
-    "unit_price": 999.99,
-    "subtotal": 999.99
+    "customer_id": "C002",
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "phone": "555-5678",
+    "address": "456 Oak Ave"
   }
 ]
 ```
 
-## Design Highlights
+### JSON Format (NDJSON - Newline Delimited)
+```json
+{"customer_id":"C001","name":"John Doe","email":"john@example.com"}
+{"customer_id":"C002","name":"Jane Smith","email":"jane@example.com"}
+```
 
-### Efficient Architecture
+## Data Loading Order
 
-1. **Streaming Processing**: Files are processed in chunks to avoid memory overflow
-2. **Batch Insertion**: Records are inserted in batches of 1000 for optimal database performance
-3. **Async I/O**: All database operations are asynchronous for better concurrency
-4. **Connection Pooling**: SQLAlchemy manages database connections efficiently
+The application automatically determines the correct insertion order based on foreign key relationships:
 
-For detailed documentation on how the streaming architecture efficiently handles large files without full in-memory loads, see [EFFICIENCY_DESIGN.md](EFFICIENCY_DESIGN.md).
+1. **Customers** (no dependencies)
+2. **Products** (no dependencies)
+3. **Orders** (depends on Customers)
+4. **Order Items** (depends on Orders and Products)
 
-### Data Flow
+## Validation Rules
 
-1. File upload → File type detection
-2. Streaming parser → Yields records one by one
-3. Chunk aggregator → Groups records into batches
-4. Validator → Validates schema and data quality
-5. Categorizer → Identifies target table for each record
-6. Relationship validator → Verifies foreign key constraints
-7. Batch loader → Inserts data in correct order (customers → products → orders → order_items)
+### Email Validation
+- Must be a valid email format
+
+### Required Fields
+- All primary keys must be provided
+- Foreign keys must exist in referenced tables
+
+### Business Rules
+- Price and total_amount must be > 0
+- Quantity must be > 0
+- Status must be one of: pending, processing, completed, cancelled
+
+## Features in Detail
+
+### Streaming Processing
+- Files are processed line-by-line
+- Constant memory usage regardless of file size
+- Uses Java Streams API for lazy evaluation
+
+### Batch Processing
+- Records processed in chunks of 1000 (configurable via `app.chunk-size`)
+- Hibernate batch inserts for optimal performance
+- Reduces database round trips
 
 ### Error Handling
+- Row-level error tracking with specific messages
+- Validation errors don't stop processing
+- Returns comprehensive error list in response
 
-- Row-level error tracking with detailed error messages
-- Transaction rollback on critical errors
-- Detailed error messages with row numbers and reasons
-- Continues processing valid records even if some fail
-- Returns comprehensive statistics:
-  - `success_rows_count`: Number of rows successfully processed
-  - `skipped_rows_count`: Number of rows skipped due to validation/insertion errors
-  - `errors`: Array of error messages with row numbers and reasons
+### Duplicate Handling
+- Checks for existing records by primary key
+- Skips duplicates (counted as skipped, not errors)
+- Existing records tracked separately from validation errors
+
+## Performance
+
+- **Streaming Processing**: Handles files of any size with constant memory usage
+- **Batch Insertions**: Processes records in configurable batches (default: 1000)
+- **Connection Pooling**: HikariCP for efficient database connections
+- **Indexed Lookups**: Fast foreign key validation
+- **Throughput**: ~2000-5000 records/second on standard hardware
 
 ## Testing
 
-Use the interactive API documentation at http://localhost:8000/docs to test file uploads.
+Use the Swagger UI at http://localhost:8000/swagger-ui/ to test file uploads interactively.
 
 Example using curl:
 ```bash
 curl -X POST "http://localhost:8000/api/upload" \
   -H "accept: application/json" \
   -H "Content-Type: multipart/form-data" \
-  -F "file=@customers.csv"
+  -F "file=@sample_files/customers.csv"
 ```
 
-## Performance Considerations
+## Troubleshooting
 
-- Processes files in chunks of 1000 records
-- Uses async database operations for I/O efficiency
-- Minimizes memory usage by streaming file content
-- Batch inserts reduce database round trips
-- Proper indexing on foreign key columns for fast lookups
+### Common Issues
+
+#### 1. "Failed to determine suitable jdbc url"
+
+**Problem:** Running without the `local` profile.
+
+**Error message:**
+```
+Failed to configure a DataSource: 'url' attribute is not specified
+```
+
+**Solution:**
+```bash
+# ✅ Correct - specify local profile
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+
+# ❌ Wrong - missing profile
+mvn spring-boot:run
+```
+
+#### 2. Application doesn't connect to database
+
+**Problem:** `application-local.properties` not configured.
+
+**Solution:**
+```bash
+# Create the file
+cp application-local.properties.example src/main/resources/application-local.properties
+
+# Edit with your database credentials
+vim src/main/resources/application-local.properties
+```
+
+#### 3. Port 8000 already in use
+
+**Problem:** Another instance is running.
+
+**Solution:**
+```bash
+# Find and kill the process
+lsof -ti:8000 | xargs kill -9
+
+# Or change port in application.properties
+server.port=8080
+```
+
+#### 4. Build fails with Lombok errors
+
+**Problem:** IDE not configured for Lombok.
+
+**Solution:**
+```bash
+# Clean and rebuild
+mvn clean compile
+
+# Ensure Lombok plugin is installed in your IDE
+```
+
+## Configuration
+
+### Spring Profiles
+
+**Local Development:**
+- Profile: `local`
+- Config file: `src/main/resources/application-local.properties`
+- Usage: `mvn spring-boot:run -Dspring-boot.run.profiles=local`
+
+**Production:**
+- No profile needed
+- Set `DATABASE_URL` environment variable
+- Usage: `java -jar parser-potato.jar`
+
+### Application Settings
+
+Edit `application.properties` to configure:
+- Server port (default: 8000)
+- File upload limits (default: 1GB)
+- Batch size (default: 1000)
+- Logging levels
+
+### Environment Variables
+
+**Required for Production:**
+```bash
+DATABASE_URL=jdbc:postgresql://host:5432/database?user=username&password=password
+```
+
+**Optional:**
+```bash
+CHUNK_SIZE=1000
+LOG_LEVEL=INFO
+```
+
+## Project Structure
+
+```
+parser-potato/
+├── src/main/java/com/parserpotato/
+│   ├── ParserPotatoApplication.java    # Main application
+│   ├── model/                           # JPA entities
+│   ├── repository/                      # Spring Data repositories
+│   ├── dto/                             # Data transfer objects
+│   ├── service/                         # Business logic
+│   ├── controller/                      # REST endpoints
+│   ├── config/                          # Configuration classes
+│   └── exception/                       # Error handling
+├── src/main/resources/
+│   ├── application.properties           # Main configuration
+│   └── application-local.properties     # Local dev config (gitignored)
+├── sample_files/                        # Test data
+├── pom.xml                              # Maven dependencies
+└── README.md                            # This file
+```
 
 ## License
 
 MIT License
+
+## Author
+
+**avinasx** - [GitHub](https://github.com/avinasx)
+
+---
+
+**For detailed implementation information, see:**
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and design
+- [TESTING.md](TESTING.md) - Testing strategies and examples
+- [EFFICIENCY_DESIGN.md](EFFICIENCY_DESIGN.md) - Performance optimization details
+- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Complete implementation summary
+
+
+extra notes 
+# kill port 8000
+lsof -ti:8000 | xargs kill -9

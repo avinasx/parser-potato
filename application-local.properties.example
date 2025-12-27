@@ -1,0 +1,10 @@
+# Example Local Development Configuration
+# Copy this file to: src/main/resources/application-local.properties
+# Then update with your actual database credentials
+
+# Database Connection
+spring.datasource.url=jdbc:postgresql://your-host:5432/your-database?user=your-username&password=your-password&sslmode=require
+
+# Application Settings (optional overrides)
+app.chunk-size=1000
+logging.level.com.parserpotato=DEBUG
