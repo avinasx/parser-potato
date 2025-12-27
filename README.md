@@ -255,7 +255,7 @@ The application automatically determines the correct insertion order based on fo
 
 ## Testing
 
-Use the Swagger UI at http://localhost:8000/swagger-ui/ to test file uploads interactively.
+Use the Swagger UI at http://localhost:8000/swagger-ui/index.html/index.html to test file uploads interactively.
 
 Example using curl:
 ```bash
